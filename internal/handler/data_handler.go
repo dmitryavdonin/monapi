@@ -108,6 +108,9 @@ func (h *Handler) getData(c *gin.Context) {
 		i := 0
 		source_index := 0
 		for {
+			if i >= len(result) {
+				break
+			}
 			result[i] = items[source_index]
 			i++
 			source_index += step

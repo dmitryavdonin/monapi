@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  monapi:
+    image: dmitryavdonin/promis-monapi
+    container_name: monapi
+    ports:
+      - '8000:8000'
+
+    environment:
+      - APP_SERVICE_NAME=monapi
+      - APP_PORT=8000
+      - DB_DBNAME=Monitoring
+      - DB_HOST=10.100.0.42
+      - DB_PORT=1433
+      - DB_USERNAME=elma_monitoring1
+      - DB_PASSWORD=7896321

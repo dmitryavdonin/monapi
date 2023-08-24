@@ -8,5 +8,4 @@ RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags='-w -s' -o /go/bin/s
 #---Final stage---
 FROM --platform=linux/amd64 alpine:latest
 COPY --from=builder /go/bin/service /go/bin/service
-COPY --from=builder /go/src/migrations /migrations
 CMD /go/bin/service --port 8000 --host '0.0.0.0'
