@@ -9,6 +9,40 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func (h *Handler) algo1(items []model.Data_new, amount int) []model.Data_new {
+
+	logrus.Printf("algo1(): BEGIN")
+
+	total := len(items)
+	step := 1
+
+	var result []model.Data_new
+
+	if total <= amount {
+		result = items
+	} else {
+		step = total / amount
+		result = make([]model.Data_new, amount)
+		i := 0
+		source_index := 0
+		for {
+			if i >= len(result) {
+				break
+			}
+			result[i] = items[source_index]
+			i++
+			source_index += step
+			if source_index+step >= total {
+				break
+			}
+		}
+	}
+
+	logrus.Printf("algo1(): END")
+
+	return result
+}
+
 // get data request
 func (h *Handler) getData(c *gin.Context) {
 
@@ -45,31 +79,21 @@ func (h *Handler) getData(c *gin.Context) {
 		return
 	}
 
-	logrus.Printf("getData(): Try to reduce amnount from %d to = %d", len(items), parser.Amount)
-
 	total := len(items)
-	step := 1
+
+	if total < parser.Amount {
+		logrus.Printf("getData(): Nothing to reduce becaue total amount = %d is less than requested amount = %d. So just return the total amount", total, parser.Amount)
+		c.JSON(http.StatusOK, gin.H{"total": total, "amount": total, "step": 1, "data": items})
+		return
+	}
+
+	step := total / parser.Amount
+
+	logrus.Printf("getData(): Try to reduce amnount from %d to = %d, step = %d, using algo = %d", len(items), parser.Amount, step, parser.Algo)
 
 	var result []model.Data_new
-
-	if total <= parser.Amount {
-		result = items
-	} else {
-		step = total / parser.Amount
-		result = make([]model.Data_new, parser.Amount)
-		i := 0
-		source_index := 0
-		for {
-			if i >= len(result) {
-				break
-			}
-			result[i] = items[source_index]
-			i++
-			source_index += step
-			if source_index+step >= total {
-				break
-			}
-		}
+	if parser.Algo == 1 {
+		result = h.algo1(items, parser.Amount)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"total": total, "amount": len(result), "step": step, "data": result})
