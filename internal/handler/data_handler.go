@@ -14,27 +14,19 @@ func (h *Handler) algo1(items []model.Data_new, amount int) []model.Data_new {
 	logrus.Printf("algo1(): BEGIN")
 
 	total := len(items)
-	step := 1
 
 	var result []model.Data_new
 
-	if total <= amount {
-		result = items
-	} else {
-		step = total / amount
-		result = make([]model.Data_new, amount)
-		i := 0
-		source_index := 0
-		for {
-			if i >= len(result) {
-				break
-			}
-			result[i] = items[source_index]
-			i++
-			source_index += step
-			if source_index+step >= total {
-				break
-			}
+	step := total / amount
+	result = make([]model.Data_new, amount)
+	source_index := 0
+
+	for i := 0; i < amount; i++ {
+		result[i] = items[source_index]
+		source_index += step
+
+		if (source_index + step) >= total {
+			break
 		}
 	}
 

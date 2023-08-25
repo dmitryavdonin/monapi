@@ -57,13 +57,20 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 	amount := 0
 	amount_str, ok := c.GetQuery("amount")
 	if !ok || amount_str == "" {
-		amount = default_amount
-		logrus.Printf("getData(): 'amount' param not found or empty. Use the default amount = %d", amount)
+		return nil, errors.New("'amount' param not found or empty")
 	}
 	amount, err = strconv.Atoi(amount_str)
 	if err != nil {
+		return nil, fmt.Errorf("cannot parse 'amount', error = %s", err.Error())
+	}
+
+	if amount == 0 {
+		return nil, errors.New("'amount' cannot be 0")
+	}
+
+	if amount > default_amount {
+		logrus.Printf("getData(): 'amount' = %d cannot be more than default_amount = %d", amount, default_amount)
 		amount = default_amount
-		logrus.Errorf("getData(): Cannot parse 'amount', error = %s, use the default amount=%d", err.Error(), amount)
 	}
 
 	algo := 0
