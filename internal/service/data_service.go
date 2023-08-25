@@ -17,3 +17,7 @@ func NewDataService(repo repository.Data) *DataService {
 func (s *DataService) GetData(id int, from time.Time, to time.Time, limit int, offset int) ([]model.Data_new, error) {
 	return s.repo.GetData(id, from, to, limit, offset)
 }
+
+func (s *DataService) GetLastValue(id int) (model.Data_new, error) {
+	return s.repo.GetLastValue(id)
+}

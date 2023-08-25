@@ -92,3 +92,23 @@ func (h *Handler) getData(c *gin.Context) {
 
 	logrus.Printf("getData(): END")
 }
+
+func (h *Handler) getLastValue(c *gin.Context) {
+	id_str := c.Param("id")
+
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		logrus.Errorf("getData(): Cannot parse 'id', error = %s", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"Error: ": err.Error()})
+		return
+	}
+
+	item, err := h.services.GetLastValue(id)
+	if err != nil {
+		logrus.Errorf("getData(): Cannot find data for 'id' int the last 1 day and last 7 days, error = %s", err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"Error: ": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, item)
+}

@@ -51,7 +51,7 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 	}
 
 	// amount
-	default_amount := 100000
+	default_amount := 10000
 	default_algo := 1
 
 	amount := 0
