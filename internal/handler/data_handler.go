@@ -4,7 +4,6 @@ import (
 	"monapi/internal/model"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -18,64 +17,6 @@ func (h *Handler) getData(c *gin.Context) {
 	var page = c.DefaultQuery("page", "1")
 	var limit = c.DefaultQuery("limit", "10000")
 
-	// check for query params
-	// ID
-	id_str, ok := c.GetQuery("id")
-	if !ok || id_str == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "'id' param not found or empty"})
-		logrus.Error("getData(): 'id' param not found or empty")
-		return
-	}
-	id, err := strconv.Atoi(id_str)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "Cannot parse 'id'"})
-		logrus.Errorf("getData(): Cannot parse 'id', error = %s", err.Error())
-		return
-	}
-
-	// from
-	from_str, ok := c.GetQuery("from")
-	if !ok || from_str == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "'from' param not found or empty"})
-		logrus.Error("getData(): 'from' param not found or empty")
-		return
-	}
-
-	from, err := time.Parse("2006-01-02", from_str)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "Cannot parse 'from'"})
-		logrus.Errorf("getData(): Cannot parse 'from', error = %s", err.Error())
-		return
-	}
-
-	// to
-	to_str, ok := c.GetQuery("to")
-	if !ok || to_str == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "'to' param not found or empty"})
-		logrus.Error("getData(): 'to' param not found or empty")
-		return
-	}
-	to, err := time.Parse("2006-01-02", to_str)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error: ": "Cannot parse 'from'"})
-		logrus.Errorf("getData(): Cannot parse 'from', error = %s", err.Error())
-		return
-	}
-
-	// amount
-	default_amount := 100000
-	amount := 0
-	amount_str, ok := c.GetQuery("amount")
-	if !ok || amount_str == "" {
-		amount = default_amount
-		logrus.Printf("getData(): 'amount' param not found or empty. Use the default amount = %d", amount)
-	}
-	amount, err = strconv.Atoi(amount_str)
-	if err != nil {
-		amount = default_amount
-		logrus.Errorf("getData(): Cannot parse 'amount', error = %s, use the default amount=%d", err.Error(), amount)
-	}
-
 	intPage, _ := strconv.Atoi(page)
 	intLimit, _ := strconv.Atoi(limit)
 
@@ -85,26 +26,37 @@ func (h *Handler) getData(c *gin.Context) {
 
 	offset := (intPage - 1) * intLimit
 
-	logrus.Printf("getData(): Try to get data for id = %s, from = %s, to = %s", id_str, from_str, to_str)
-	items, err := h.services.Data.GetData(id, from, to, intLimit, offset)
+	parser, err := InitParamParser(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
-		logrus.Errorf("getData(): Cannot get data for id = %s, from = %s, to = %s, error = %s", id_str, from_str, to_str, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"Error: ": err.Error()})
+		logrus.Errorf("getData(): Cannot parse params, error = %s", err.Error())
 		return
 	}
 
-	logrus.Printf("getData(): Try to reduce amnount from %d to = %d", len(items), amount)
+	logrus.Printf("getData(): Try to get data for id = %d, from = %s, to = %s",
+		parser.ID, parser.From.Format("2006-01-02"), parser.To.Format("2006-01-02"))
+
+	items, err := h.services.Data.GetData(parser.ID, parser.From, parser.To, intLimit, offset)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
+		logrus.Errorf("getData(): Cannot get data for id = %d, from = %s, to = %s, error = %s",
+			parser.ID, parser.From.Format("2006-01-02"), parser.To.Format("2006-01-02"), err.Error())
+		return
+	}
+
+	logrus.Printf("getData(): Try to reduce amnount from %d to = %d", len(items), parser.Amount)
 
 	total := len(items)
 	step := 1
 
 	var result []model.Data_new
 
-	if total <= amount {
+	if total <= parser.Amount {
 		result = items
 	} else {
-		step = total / amount
-		result = make([]model.Data_new, amount)
+		step = total / parser.Amount
+		result = make([]model.Data_new, parser.Amount)
 		i := 0
 		source_index := 0
 		for {
