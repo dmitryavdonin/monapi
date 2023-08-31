@@ -19,8 +19,8 @@ func NewDataMssql(db *gorm.DB) *DataMsssql {
 func (r *DataMsssql) GetData(id int, from time.Time, to time.Time, limit int, offset int) ([]model.Data_new, error) {
 	var items []model.Data_new
 
-	db_from := fmt.Sprintf("%d-%d-%d", from.Year(), from.Day(), from.Month())
-	db_to := fmt.Sprintf("%d-%d-%d", to.Year(), to.Day(), to.Month())
+	db_from := fmt.Sprintf("%d-%d-%d %d:%d:%d", from.Year(), from.Day(), from.Month(), from.Hour(), from.Minute(), from.Second())
+	db_to := fmt.Sprintf("%d-%d-%d %d:%d:%d", to.Year(), to.Day(), to.Month(), to.Hour(), to.Minute(), to.Second())
 
 	result := r.db.Limit(limit).Offset(offset).Where("ID = ? AND DtWr BETWEEN ? AND ?", id, db_from, db_to).Order("DtWr asc").Find(&items)
 	if result.Error != nil {

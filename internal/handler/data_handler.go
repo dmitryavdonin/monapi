@@ -60,14 +60,14 @@ func (h *Handler) getData(c *gin.Context) {
 	}
 
 	logrus.Printf("getData(): Try to get data for id = %d, from = %s, to = %s",
-		parser.ID, parser.From.Format("2006-01-02"), parser.To.Format("2006-01-02"))
+		parser.ID, parser.From.Format("2006-01-02 15:04:05"), parser.To.Format("2006-01-02 15:04:05"))
 
 	items, err := h.services.Data.GetData(parser.ID, parser.From, parser.To, intLimit, offset)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		logrus.Errorf("getData(): Cannot get data for id = %d, from = %s, to = %s, error = %s",
-			parser.ID, parser.From.Format("2006-01-02"), parser.To.Format("2006-01-02"), err.Error())
+			parser.ID, parser.From.Format("2006-01-02 15:04:05"), parser.To.Format("2006-01-02 15:04:05"), err.Error())
 		return
 	}
 

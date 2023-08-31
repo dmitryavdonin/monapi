@@ -13,13 +13,10 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:8000/api/data?id=33&from=2023-08-22&to=2023-08-23&amount=100",
+					"raw": "http://{{host}}:8000/api/data?id=33&from=2023-08-22&to=2023-08-23&amount=100",
 					"protocol": "http",
 					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
+						"{{host}}"
 					],
 					"port": "8000",
 					"path": [
@@ -54,13 +51,10 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:8000/api/last/:id",
+					"raw": "http://{{host}}:8000/api/last/:id",
 					"protocol": "http",
 					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
+						"{{host}}"
 					],
 					"port": "8000",
 					"path": [
@@ -77,6 +71,33 @@
 				}
 			},
 			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "host",
+			"value": "10.100.0.62",
+			"type": "string"
 		}
 	]
 }

@@ -35,7 +35,7 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 		return nil, errors.New("'from' param not found or empty")
 	}
 
-	from, err := time.Parse("2006-01-02", from_str)
+	from, err := time.Parse("2006-01-02 15:04:05", from_str)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse 'from', error = %s", err.Error())
 	}
@@ -45,7 +45,7 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 	if !ok || to_str == "" {
 		return nil, errors.New("'to' param not found or empty")
 	}
-	to, err := time.Parse("2006-01-02", to_str)
+	to, err := time.Parse("2006-01-02 15:04:05", to_str)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse 'to', error = %s", err.Error())
 	}
