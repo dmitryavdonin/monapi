@@ -16,6 +16,7 @@ type ParamParser struct {
 	From   time.Time
 	To     time.Time
 	Algo   int
+	D      int // допуск в процентах
 }
 
 func InitParamParser(c *gin.Context) (*ParamParser, error) {
@@ -52,7 +53,8 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 
 	// amount
 	default_amount := 10000
-	default_algo := 1
+	default_algo := 2
+	default_D := 50
 
 	amount := 0
 	amount_str, ok := c.GetQuery("amount")
@@ -85,7 +87,22 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 		logrus.Errorf("getData(): Cannot parse 'algo', error = %s, use the default algo=%d", err.Error(), algo)
 	}
 	if algo > 2 {
-		algo = 1
+		algo = default_algo
+	}
+
+	D := 0
+	D_str, ok := c.GetQuery("D")
+	if !ok || D_str == "" {
+		D = default_D
+		logrus.Printf("getData(): 'algo' param not found or empty. Use the default algo = %d", algo)
+	}
+	D, err = strconv.Atoi(D_str)
+	if err != nil {
+		D = default_D
+		logrus.Errorf("getData(): Cannot parse 'D', error = %s, use the default D = %d", err.Error(), D)
+	}
+	if D > 100 || D <= 0 {
+		D = default_D
 	}
 
 	return &ParamParser{
@@ -94,5 +111,6 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 		To:     to,
 		Amount: amount,
 		Algo:   algo,
+		D:      D,
 	}, nil
 }
