@@ -16,3 +16,12 @@ type DTO struct {
 	Humidity    float32 `json:"H"`
 	Time        string  `json:"t"`
 }
+
+type DTODebug struct {
+	Temperature float32 `json:"T"`
+	Humidity    float32 `json:"H"`
+	Time        string  `json:"t"`
+	Point       string  `json:"point"`
+	Left        string  `json:"left"`
+	Right       string  `json:"right"`
+}

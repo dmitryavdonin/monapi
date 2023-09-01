@@ -23,8 +23,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		api.GET("/version", h.getVersion)
 		api.GET("/data", h.getData)
+		api.GET("/data/debug", h.getDataDebug)
 		api.GET("/last/:id", h.getLastValue)
 	}
 
 	return router
 }
+
+// Qwer-1234
