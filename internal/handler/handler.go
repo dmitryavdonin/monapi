@@ -21,6 +21,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	api := router.Group("/api")
 	{
+		api.GET("/version", h.getVersion)
 		api.GET("/data", h.getData)
 		api.GET("/last/:id", h.getLastValue)
 	}

@@ -10,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var Version string = "2.0.1"
+
 func (h *Handler) algo1(items []model.Data_new, amount int) []model.DTO {
 
 	logrus.Printf("algo1(): BEGIN")
@@ -168,4 +170,8 @@ func (h *Handler) getLastValue(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.DTO{Temperature: item.Temperature, Humidity: item.Humidity, Time: item.DtWr.Format("2006-01-02 15:04:05")})
+}
+
+func (h *Handler) getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"version:": Version})
 }
