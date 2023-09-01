@@ -135,7 +135,7 @@ func (h *Handler) getData(c *gin.Context) {
 
 	if total < parser.Amount {
 		logrus.Printf("getData(): total amount = %d is less than requested amount = %d", total, parser.Amount)
-		parser.Amount = total
+		//parser.Amount = total
 	}
 
 	var result []model.DTO
