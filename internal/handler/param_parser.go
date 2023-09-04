@@ -101,7 +101,7 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 		D = default_D
 		logrus.Errorf("getData(): Cannot parse 'D', error = %s, use the default D = %d", err.Error(), D)
 	}
-	if D > 100 || D <= 0 {
+	if D > 50 || D <= 0 {
 		D = default_D
 	}
 

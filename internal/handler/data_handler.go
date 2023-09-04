@@ -8,9 +8,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
+	"math"
 )
 
-var Version string = "2.0.2"
+var Version string = "2.0.3"
 
 func (h *Handler) algo1(items []model.Data_new, amount int) []model.DTO {
 
@@ -46,13 +48,164 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	var result *model.Data_new = nil
 
 	left_point := point.Add(-time.Second * time.Duration(D_range))
-	right_pont := point.Add(time.Second * time.Duration(D_range))
+	right_point := point.Add(time.Second * time.Duration(D_range))
+
+	m_left := make(map[int64]model.Data_new)
+	m_right := make(map[int64]model.Data_new)
 
 	for _, item := range items {
 
-		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < right_pont.Unix() {
-			result = &item
+		// left points
+		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
+			span := point.Sub(item.DtWr)
+			m_left[span.Milliseconds()] = item
+		}
+
+		// right points
+		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
+			span := item.DtWr.Sub(point)
+			m_right[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() >= right_point.Unix() {
 			break
+		}
+	}
+
+	var min_left int64 = math.MinInt64
+	var min_right int64 = math.MinInt64
+
+	// find the min in left
+	if len(m_left) > 0 {
+		for k := range m_left {
+			if min_left < k {
+				min_left = k
+			}
+		}
+	}
+
+	// find the min in right
+	if len(m_right) > 0 {
+		for k := range m_right {
+			if min_right < k {
+				min_right = k
+			}
+		}
+	}
+
+	if min_right != math.MinInt64 && min_left != math.MinInt64 {
+		if min_left < min_right {
+			result = &model.Data_new{
+				ID:          m_left[min_left].ID,
+				Temperature: m_left[min_left].Temperature,
+				Humidity:    m_left[min_left].Humidity,
+				DtWr:        m_left[min_left].DtWr,
+			}
+		} else {
+			result = &model.Data_new{
+				ID:          m_right[min_right].ID,
+				Temperature: m_right[min_right].Temperature,
+				Humidity:    m_right[min_right].Humidity,
+				DtWr:        m_right[min_right].DtWr,
+			}
+		}
+	} else if min_right != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_right[min_right].ID,
+			Temperature: m_right[min_right].Temperature,
+			Humidity:    m_right[min_right].Humidity,
+			DtWr:        m_right[min_right].DtWr,
+		}
+	} else if min_left != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_left[min_left].ID,
+			Temperature: m_left[min_left].Temperature,
+			Humidity:    m_left[min_left].Humidity,
+			DtWr:        m_left[min_left].DtWr,
+		}
+	}
+
+	return result
+}
+
+func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
+	var result *model.Data_new = nil
+	right_point := point.Add(time.Second * time.Duration(D_range))
+
+	m_right := make(map[int64]model.Data_new)
+
+	for _, item := range items {
+		// right points
+		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
+			span := item.DtWr.Sub(point)
+			m_right[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() >= right_point.Unix() {
+			break
+		}
+	}
+
+	var min_right int64 = math.MinInt64
+
+	// find the min in right
+	if len(m_right) > 0 {
+		for k := range m_right {
+			if min_right < k {
+				min_right = k
+			}
+		}
+	}
+
+	if min_right != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_right[min_right].ID,
+			Temperature: m_right[min_right].Temperature,
+			Humidity:    m_right[min_right].Humidity,
+			DtWr:        m_right[min_right].DtWr,
+		}
+	}
+
+	return result
+}
+
+func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
+	var result *model.Data_new = nil
+
+	left_point := point.Add(-time.Second * time.Duration(D_range))
+
+	m_left := make(map[int64]model.Data_new)
+
+	for _, item := range items {
+
+		// left points
+		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
+			span := point.Sub(item.DtWr)
+			m_left[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() >= point.Unix() {
+			break
+		}
+	}
+
+	var min_left int64 = math.MinInt64
+
+	// find the min in left
+	if len(m_left) > 0 {
+		for k := range m_left {
+			if min_left < k {
+				min_left = k
+			}
+		}
+	}
+
+	if min_left != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_left[min_left].ID,
+			Temperature: m_left[min_left].Temperature,
+			Humidity:    m_left[min_left].Humidity,
+			DtWr:        m_left[min_left].DtWr,
 		}
 	}
 
@@ -63,17 +216,168 @@ func (h *Handler) findNearestDebug(items []model.Data_new, point time.Time, D_ra
 	var result *model.Data_new = nil
 
 	left_point := point.Add(-time.Second * time.Duration(D_range))
-	right_pont := point.Add(time.Second * time.Duration(D_range))
+	right_point := point.Add(time.Second * time.Duration(D_range))
+
+	m_left := make(map[int64]model.Data_new)
+	m_right := make(map[int64]model.Data_new)
 
 	for _, item := range items {
 
-		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < right_pont.Unix() {
-			result = &item
+		// left ponts
+		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
+			span := point.Sub(item.DtWr)
+			m_left[span.Milliseconds()] = item
+		}
+
+		// right points
+		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
+			span := item.DtWr.Sub(point)
+			m_right[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() >= right_point.Unix() {
 			break
 		}
 	}
 
-	return result, left_point, right_pont
+	var min_left int64 = math.MinInt64
+	var min_right int64 = math.MinInt64
+
+	// find the min in left
+	if len(m_left) > 0 {
+		for k := range m_left {
+			if min_left < k {
+				min_left = k
+			}
+		}
+	}
+
+	// find the min in right
+	if len(m_right) > 0 {
+		for k := range m_right {
+			if min_right < k {
+				min_right = k
+			}
+		}
+	}
+
+	if min_right != math.MinInt64 && min_left != math.MinInt64 {
+		if min_left < min_right {
+			result = &model.Data_new{
+				ID:          m_left[min_left].ID,
+				Temperature: m_left[min_left].Temperature,
+				Humidity:    m_left[min_left].Humidity,
+				DtWr:        m_left[min_left].DtWr,
+			}
+		} else {
+			result = &model.Data_new{
+				ID:          m_right[min_right].ID,
+				Temperature: m_right[min_right].Temperature,
+				Humidity:    m_right[min_right].Humidity,
+				DtWr:        m_right[min_right].DtWr,
+			}
+		}
+	} else if min_right != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_right[min_right].ID,
+			Temperature: m_right[min_right].Temperature,
+			Humidity:    m_right[min_right].Humidity,
+			DtWr:        m_right[min_right].DtWr,
+		}
+	} else if min_left != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_left[min_left].ID,
+			Temperature: m_left[min_left].Temperature,
+			Humidity:    m_left[min_left].Humidity,
+			DtWr:        m_left[min_left].DtWr,
+		}
+	}
+
+	return result, left_point, right_point
+}
+
+func (h *Handler) findNearestRightOnlytDebug(items []model.Data_new, point time.Time, D_range int) (r *model.Data_new, left time.Time, right time.Time) {
+	var result *model.Data_new = nil
+
+	right_point := point.Add(time.Second * time.Duration(D_range))
+	m_right := make(map[int64]model.Data_new)
+
+	for _, item := range items {
+		// right points
+		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
+			span := item.DtWr.Sub(point)
+			m_right[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() >= right_point.Unix() {
+			break
+		}
+	}
+
+	var min_right int64 = math.MinInt64
+
+	// find the min in right
+	if len(m_right) > 0 {
+		for k := range m_right {
+			if min_right < k {
+				min_right = k
+			}
+		}
+	}
+
+	if min_right != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_right[min_right].ID,
+			Temperature: m_right[min_right].Temperature,
+			Humidity:    m_right[min_right].Humidity,
+			DtWr:        m_right[min_right].DtWr,
+		}
+	}
+
+	return result, point, right_point
+}
+
+func (h *Handler) findNearestLeftOnlyDebug(items []model.Data_new, point time.Time, D_range int) (r *model.Data_new, left time.Time, right time.Time) {
+	var result *model.Data_new = nil
+
+	left_point := point.Add(-time.Second * time.Duration(D_range))
+
+	m_left := make(map[int64]model.Data_new)
+
+	for _, item := range items {
+
+		// left ponts
+		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
+			span := point.Sub(item.DtWr)
+			m_left[span.Milliseconds()] = item
+		}
+
+		if item.DtWr.Unix() > point.Unix() {
+			break
+		}
+	}
+
+	var min_left int64 = math.MinInt64
+
+	// find the min in left
+	if len(m_left) > 0 {
+		for k := range m_left {
+			if min_left < k {
+				min_left = k
+			}
+		}
+	}
+
+	if min_left != math.MinInt64 {
+		result = &model.Data_new{
+			ID:          m_left[min_left].ID,
+			Temperature: m_left[min_left].Temperature,
+			Humidity:    m_left[min_left].Humidity,
+			DtWr:        m_left[min_left].DtWr,
+		}
+	}
+
+	return result, left_point, point
 }
 
 // algo2 implementation
@@ -89,24 +393,35 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 
 	D_range := step_in_sec * D / 100
 
-	result = make([]model.DTO, amount)
-
-	for i := 0; i < amount; i++ {
+	for i := 0; i < amount+1; i++ {
 		point := from.Add(time.Second * time.Duration(step_in_sec*i))
-		item := h.findNearest(items, point, D_range)
+		var item *model.Data_new
+		var dto model.DTO
+
+		if i == 0 {
+			// first point
+			item = h.findNearestRightOnly(items, point, D_range)
+		} else if i == amount {
+			item = h.findNearestLeftOnly(items, point, D_range)
+		} else {
+			// last point
+			item = h.findNearest(items, point, D_range)
+		}
+
 		if item != nil {
-			result[i] = model.DTO{
+			dto = model.DTO{
 				Temperature: item.Temperature,
 				Humidity:    item.Humidity,
 				Time:        item.DtWr.Format("2006-01-02 15:04:05"),
 			}
 		} else {
-			result[i] = model.DTO{
+			dto = model.DTO{
 				Temperature: 1000,
 				Humidity:    1000,
 				Time:        point.Format("2006-01-02 15:04:05"),
 			}
 		}
+		result = append(result, dto)
 	}
 
 	logrus.Printf("algo2(): END")
@@ -126,13 +441,22 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 
 	D_range := step_in_sec * D / 100
 
-	result = make([]model.DTODebug, amount)
-
-	for i := 0; i < amount; i++ {
+	for i := 0; i < amount+1; i++ {
 		point := from.Add(time.Second * time.Duration(step_in_sec*i))
-		item, left, right := h.findNearestDebug(items, point, D_range)
+		var item *model.Data_new
+		var dto model.DTODebug
+		var left, right time.Time
+
+		if i == 0 {
+			item, left, right = h.findNearestRightOnlytDebug(items, point, D_range)
+		} else if i == amount {
+			item, left, right = h.findNearestLeftOnlyDebug(items, point, D_range)
+		} else {
+			item, left, right = h.findNearestDebug(items, point, D_range)
+		}
+
 		if item != nil {
-			result[i] = model.DTODebug{
+			dto = model.DTODebug{
 				Temperature: item.Temperature,
 				Humidity:    item.Humidity,
 				Time:        item.DtWr.Format("2006-01-02 15:04:05"),
@@ -141,7 +465,7 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 				Right:       right.Format("2006-01-02 15:04:05"),
 			}
 		} else {
-			result[i] = model.DTODebug{
+			dto = model.DTODebug{
 				Temperature: 1000,
 				Humidity:    1000,
 				Time:        point.Format("2006-01-02 15:04:05"),
@@ -150,6 +474,7 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 				Right:       right.Format("2006-01-02 15:04:05"),
 			}
 		}
+		result = append(result, dto)
 	}
 
 	logrus.Printf("algo2(): END")
