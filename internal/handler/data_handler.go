@@ -12,7 +12,7 @@ import (
 	"math"
 )
 
-var Version string = "2.0.3"
+var Version string = "2.0.4"
 
 func (h *Handler) algo1(items []model.Data_new, amount int) []model.DTO {
 
@@ -393,6 +393,21 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 
 	D_range := step_in_sec * D / 100
 
+	/* Общее правило выравнивания допуска:
+	Если расчетный размер допуска (D) меньше 60 секунд - берем ровно 60 секунд.*/
+	if D_range < 60 {
+		D_range = 60
+		logrus.Printf("algo2(): D_range is less than 60 sec, so let have D_range = 60 sec")
+	}
+
+	/*Уточнение для исключения "нахлеста":
+	НО, если получается так, что допуск размером 60 секунд менее 50% интервала, то нужно взять строго допуск = 50% интервала.*/
+	if D_range < (step_in_sec / 2) {
+		D_range = (step_in_sec / 2)
+		logrus.Printf("algo2(): D_range = %d is less than step_in_sec / 2 = %d sec, so let have D_range = step_in_sec / 2",
+			D_range, (step_in_sec / 2))
+	}
+
 	for i := 0; i < amount+1; i++ {
 		point := from.Add(time.Second * time.Duration(step_in_sec*i))
 		var item *model.Data_new
@@ -431,7 +446,7 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 
 func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time, to time.Time, D int) ([]model.DTODebug, int, int) {
 
-	logrus.Printf("algo2(): BEGIN")
+	logrus.Printf("algo2Debug(): BEGIN")
 
 	var result []model.DTODebug
 
@@ -440,6 +455,21 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 	step_in_sec := int(span.Seconds()) / amount
 
 	D_range := step_in_sec * D / 100
+
+	/* Общее правило выравнивания допуска:
+	Если расчетный размер допуска (D) меньше 60 секунд - берем ровно 60 секунд.*/
+	if D_range < 60 {
+		D_range = 60
+		logrus.Printf("algo2Debug(): D_range is less than 60 sec, so let have D_range = 60 sec")
+	}
+
+	/*Уточнение для исключения "нахлеста":
+	НО, если получается так, что допуск размером 60 секунд менее 50% интервала, то нужно взять строго допуск = 50% интервала.*/
+	if D_range < (step_in_sec / 2) {
+		D_range = (step_in_sec / 2)
+		logrus.Printf("algo2Debug(): D_range = %d is less than step_in_sec / 2 = %d sec, so let have D_range = step_in_sec / 2",
+			D_range, (step_in_sec / 2))
+	}
 
 	for i := 0; i < amount+1; i++ {
 		point := from.Add(time.Second * time.Duration(step_in_sec*i))
@@ -477,7 +507,7 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 		result = append(result, dto)
 	}
 
-	logrus.Printf("algo2(): END")
+	logrus.Printf("algo2Debug(): END")
 
 	return result, step_in_sec, D_range
 }
