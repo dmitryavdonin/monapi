@@ -12,7 +12,7 @@ import (
 	"math"
 )
 
-var Version string = "2.0.4"
+var Version string = "2.0.5"
 
 func (h *Handler) algo1(items []model.Data_new, amount int) []model.DTO {
 
@@ -78,7 +78,11 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	// find the min in left
 	if len(m_left) > 0 {
 		for k := range m_left {
-			if min_left < k {
+			if min_left == math.MinInt64 {
+				min_left = k
+				continue
+			}
+			if k < min_left {
 				min_left = k
 			}
 		}
@@ -87,7 +91,11 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	// find the min in right
 	if len(m_right) > 0 {
 		for k := range m_right {
-			if min_right < k {
+			if min_right == math.MinInt64 {
+				min_right = k
+				continue
+			}
+			if k < min_right {
 				min_right = k
 			}
 		}
@@ -151,7 +159,11 @@ func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, 
 	// find the min in right
 	if len(m_right) > 0 {
 		for k := range m_right {
-			if min_right < k {
+			if min_right == math.MinInt64 {
+				min_right = k
+				continue
+			}
+			if k < min_right {
 				min_right = k
 			}
 		}
@@ -194,7 +206,11 @@ func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D
 	// find the min in left
 	if len(m_left) > 0 {
 		for k := range m_left {
-			if min_left < k {
+			if min_left == math.MinInt64 {
+				min_left = k
+				continue
+			}
+			if k < min_left {
 				min_left = k
 			}
 		}
@@ -246,7 +262,11 @@ func (h *Handler) findNearestDebug(items []model.Data_new, point time.Time, D_ra
 	// find the min in left
 	if len(m_left) > 0 {
 		for k := range m_left {
-			if min_left < k {
+			if min_left == math.MinInt64 {
+				min_left = k
+				continue
+			}
+			if k < min_left {
 				min_left = k
 			}
 		}
@@ -255,7 +275,11 @@ func (h *Handler) findNearestDebug(items []model.Data_new, point time.Time, D_ra
 	// find the min in right
 	if len(m_right) > 0 {
 		for k := range m_right {
-			if min_right < k {
+			if min_right == math.MinInt64 {
+				min_right = k
+				continue
+			}
+			if k < min_right {
 				min_right = k
 			}
 		}
@@ -319,7 +343,11 @@ func (h *Handler) findNearestRightOnlytDebug(items []model.Data_new, point time.
 	// find the min in right
 	if len(m_right) > 0 {
 		for k := range m_right {
-			if min_right < k {
+			if min_right == math.MinInt64 {
+				min_right = k
+				continue
+			}
+			if k < min_right {
 				min_right = k
 			}
 		}
@@ -362,7 +390,11 @@ func (h *Handler) findNearestLeftOnlyDebug(items []model.Data_new, point time.Ti
 	// find the min in left
 	if len(m_left) > 0 {
 		for k := range m_left {
-			if min_left < k {
+			if min_left == math.MinInt64 {
+				min_left = k
+				continue
+			}
+			if k < min_left {
 				min_left = k
 			}
 		}
@@ -466,9 +498,9 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 	/*Уточнение для исключения "нахлеста":
 	НО, если получается так, что допуск размером 60 секунд менее 50% интервала, то нужно взять строго допуск = 50% интервала.*/
 	if D_range < (step_in_sec / 2) {
-		D_range = (step_in_sec / 2)
 		logrus.Printf("algo2Debug(): D_range = %d is less than step_in_sec / 2 = %d sec, so let have D_range = step_in_sec / 2",
 			D_range, (step_in_sec / 2))
+		D_range = (step_in_sec / 2)
 	}
 
 	for i := 0; i < amount+1; i++ {
