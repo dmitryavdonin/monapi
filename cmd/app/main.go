@@ -19,12 +19,13 @@ import (
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 
+	// загрузка конфига из переменных окружения
 	cfg, err := config.InitConfig("")
 	if err != nil {
 		panic(fmt.Sprintf("main(): error initializing config %s", err))
 	}
 
-	// dsn := "sqlserver://login:pass@host:port?database=name"
+	// формирование строки подключения к базе данных MSSQL
 	dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
 		cfg.DB.Username,
 		cfg.DB.Password,
@@ -32,30 +33,28 @@ func main() {
 		cfg.DB.Port,
 		cfg.DB.DBname)
 
+	// подключение к MSSQL
 	db, err := repository.NewMSSQLDB(dsn)
-
 	if err != nil {
 		logrus.Fatalf("main(): failed to initialize db: %s", err.Error())
 	}
 
-	// create repository
+	// паттерн чистая архитектура handlers -> service -> repository
 	repos := repository.NewRepository(db)
-	//create services
 	services := service.NewServices(repos)
-	// create hanlers
 	handlers := handler.NewHandler(services)
 
-	// create server
+	// запуск веб-сервера на порту, указанному в конфиге
 	srv := new(monapi.Server)
 	go func() {
 		if err := srv.Run(cfg.App.Port, handlers.InitRoutes()); err != nil {
 			logrus.Fatalf("main(): error occured while running http server: %s", err.Error())
 		}
-
 	}()
 
 	logrus.Printf("main(): Service %s started on port = %d ", cfg.App.ServiceName, cfg.App.Port)
 
+	// обработка завершения приложения
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit

@@ -7,11 +7,13 @@ import (
 )
 
 type Config struct {
+	// параметры приложения
 	App struct {
 		Port        int
 		ServiceName string
 	}
 
+	// параметры подключения к БД
 	DB struct {
 		Username string
 		Password string
@@ -23,7 +25,6 @@ type Config struct {
 
 func InitConfig(prefix string) (*Config, error) {
 	conf := &Config{}
-
 	if len(prefix) > 0 {
 		if err := envconfig.InitWithPrefix(conf, prefix); err != nil {
 			return nil, fmt.Errorf("init config error: %w", err)
@@ -33,6 +34,5 @@ func InitConfig(prefix string) (*Config, error) {
 			return nil, fmt.Errorf("init config error: %w", err)
 		}
 	}
-
 	return conf, nil
 }

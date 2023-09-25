@@ -16,6 +16,7 @@ func NewHandler(services *service.Services) *Handler {
 	}
 }
 
+// настройка маршрутов REST API
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 

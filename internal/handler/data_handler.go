@@ -14,36 +14,7 @@ import (
 
 var Version string = "2.0.5"
 
-func (h *Handler) algo1(items []model.Data_new, amount int) []model.DTO {
-
-	logrus.Printf("algo1(): BEGIN")
-
-	total := len(items)
-
-	var result []model.DTO
-
-	step := total / amount
-	result = make([]model.DTO, amount)
-	source_index := 0
-
-	for i := 0; i < amount; i++ {
-		result[i] = model.DTO{
-			Temperature: items[source_index].Temperature,
-			Humidity:    items[source_index].Temperature,
-			Time:        items[source_index].DtWr.Format("2006-01-02 15:04:05")}
-
-		source_index += step
-
-		if (source_index + step) >= total {
-			break
-		}
-	}
-
-	logrus.Printf("algo1(): END")
-
-	return result
-}
-
+// Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности слева и справа
 func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
 	var result *model.Data_new = nil
 
@@ -54,19 +25,16 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	m_right := make(map[int64]model.Data_new)
 
 	for _, item := range items {
-
-		// left points
+		// фактические точки слева
 		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
 			span := point.Sub(item.DtWr)
 			m_left[span.Milliseconds()] = item
 		}
-
-		// right points
+		// фактические точки справа
 		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
 			span := item.DtWr.Sub(point)
 			m_right[span.Milliseconds()] = item
 		}
-
 		if item.DtWr.Unix() >= right_point.Unix() {
 			break
 		}
@@ -75,7 +43,7 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	var min_left int64 = math.MinInt64
 	var min_right int64 = math.MinInt64
 
-	// find the min in left
+	// найти ближайшую слева
 	if len(m_left) > 0 {
 		for k := range m_left {
 			if min_left == math.MinInt64 {
@@ -88,7 +56,7 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 		}
 	}
 
-	// find the min in right
+	// найти ближайшую справа
 	if len(m_right) > 0 {
 		for k := range m_right {
 			if min_right == math.MinInt64 {
@@ -101,6 +69,7 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 		}
 	}
 
+	// выбрать ближайшую между левой и правой и положить в массив возвращаемого результата
 	if min_right != math.MinInt64 && min_left != math.MinInt64 {
 		if min_left < min_right {
 			result = &model.Data_new{
@@ -136,6 +105,7 @@ func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range i
 	return result
 }
 
+// Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности справа
 func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
 	var result *model.Data_new = nil
 	right_point := point.Add(time.Second * time.Duration(D_range))
@@ -143,12 +113,11 @@ func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, 
 	m_right := make(map[int64]model.Data_new)
 
 	for _, item := range items {
-		// right points
+		// точки справа
 		if item.DtWr.Unix() >= point.Unix() && item.DtWr.Unix() < right_point.Unix() {
 			span := item.DtWr.Sub(point)
 			m_right[span.Milliseconds()] = item
 		}
-
 		if item.DtWr.Unix() >= right_point.Unix() {
 			break
 		}
@@ -156,7 +125,7 @@ func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, 
 
 	var min_right int64 = math.MinInt64
 
-	// find the min in right
+	// выбрать ближайшую справа
 	if len(m_right) > 0 {
 		for k := range m_right {
 			if min_right == math.MinInt64 {
@@ -169,6 +138,7 @@ func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, 
 		}
 	}
 
+	// добавить в массив возвращаемых значений
 	if min_right != math.MinInt64 {
 		result = &model.Data_new{
 			ID:          m_right[min_right].ID,
@@ -181,6 +151,7 @@ func (h *Handler) findNearestRightOnly(items []model.Data_new, point time.Time, 
 	return result
 }
 
+// Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности слева
 func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
 	var result *model.Data_new = nil
 
@@ -189,13 +160,11 @@ func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D
 	m_left := make(map[int64]model.Data_new)
 
 	for _, item := range items {
-
-		// left points
+		// точки слева
 		if item.DtWr.Unix() >= left_point.Unix() && item.DtWr.Unix() < point.Unix() {
 			span := point.Sub(item.DtWr)
 			m_left[span.Milliseconds()] = item
 		}
-
 		if item.DtWr.Unix() >= point.Unix() {
 			break
 		}
@@ -203,7 +172,7 @@ func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D
 
 	var min_left int64 = math.MinInt64
 
-	// find the min in left
+	// выбрать ближайшую слева
 	if len(m_left) > 0 {
 		for k := range m_left {
 			if min_left == math.MinInt64 {
@@ -216,6 +185,7 @@ func (h *Handler) findNearestLeftOnly(items []model.Data_new, point time.Time, D
 		}
 	}
 
+	// положить в массив возвращаемых значений
 	if min_left != math.MinInt64 {
 		result = &model.Data_new{
 			ID:          m_left[min_left].ID,
@@ -412,10 +382,10 @@ func (h *Handler) findNearestLeftOnlyDebug(items []model.Data_new, point time.Ti
 	return result, left_point, point
 }
 
-// algo2 implementation
-func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to time.Time, D int) []model.DTO {
+// Реализация алгоритма прореживания данных
+func (h *Handler) prepareData(items []model.Data_new, amount int, from time.Time, to time.Time, D int) []model.DTO {
 
-	logrus.Printf("algo2(): BEGIN")
+	logrus.Printf("prepareData(): BEGIN")
 
 	var result []model.DTO
 
@@ -425,33 +395,35 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 
 	D_range := step_in_sec * D / 100
 
-	/* Общее правило выравнивания допуска:
-	Если расчетный размер допуска (D) меньше 60 секунд - берем ровно 60 секунд.*/
+	// Общее правило выравнивания допуска:
+	// Если расчетный размер допуска (D) меньше 60 секунд - берем ровно 60 секунд.
 	if D_range < 60 {
 		D_range = 60
-		logrus.Printf("algo2(): D_range is less than 60 sec, so let have D_range = 60 sec")
+		logrus.Printf("prepareData(): D_range is less than 60 sec, so let have D_range = 60 sec")
 	}
 
-	/*Уточнение для исключения "нахлеста":
-	НО, если получается так, что допуск размером 60 секунд менее 50% интервала, то нужно взять строго допуск = 50% интервала.*/
+	// Уточнение для исключения "нахлеста":
+	// НО, если получается так, что допуск размером 60 секунд менее 50% интервала, то нужно взять строго допуск = 50% интервала.
 	if D_range < (step_in_sec / 2) {
 		D_range = (step_in_sec / 2)
-		logrus.Printf("algo2(): D_range = %d is less than step_in_sec / 2 = %d sec, so let have D_range = step_in_sec / 2",
+		logrus.Printf("prepareData(): D_range = %d is less than step_in_sec / 2 = %d sec, so let have D_range = step_in_sec / 2",
 			D_range, (step_in_sec / 2))
 	}
 
+	// основной цикл поиска ближайших фактических точек к расчетным
 	for i := 0; i < amount+1; i++ {
 		point := from.Add(time.Second * time.Duration(step_in_sec*i))
 		var item *model.Data_new
 		var dto model.DTO
 
 		if i == 0 {
-			// first point
+			// для левой границы диапазона ищем ближайшего соседа справа
 			item = h.findNearestRightOnly(items, point, D_range)
 		} else if i == amount {
+			// для правой границы диапазона ищем ближайшего соседа слева
 			item = h.findNearestLeftOnly(items, point, D_range)
 		} else {
-			// last point
+			// для остальных расчетных точек анализируем соседей как слева, так и справа
 			item = h.findNearest(items, point, D_range)
 		}
 
@@ -462,6 +434,8 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 				Time:        item.DtWr.Format("2006-01-02 15:04:05"),
 			}
 		} else {
+			// если не нашли фактическую точку в пределах дельта-окрестности - возвращаем фиктивные значения 1000
+			// и временную метку расчетной точки
 			dto = model.DTO{
 				Temperature: 1000,
 				Humidity:    1000,
@@ -471,12 +445,13 @@ func (h *Handler) algo2(items []model.Data_new, amount int, from time.Time, to t
 		result = append(result, dto)
 	}
 
-	logrus.Printf("algo2(): END")
+	logrus.Printf("prepareData(): END")
 
 	return result
 }
 
-func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time, to time.Time, D int) ([]model.DTODebug, int, int) {
+// Реализация алгоритма прореживания данных в режиме отладки
+func (h *Handler) prepareDataDebug(items []model.Data_new, amount int, from time.Time, to time.Time, D int) ([]model.DTODebug, int, int) {
 
 	logrus.Printf("algo2Debug(): BEGIN")
 
@@ -544,7 +519,30 @@ func (h *Handler) algo2Debug(items []model.Data_new, amount int, from time.Time,
 	return result, step_in_sec, D_range
 }
 
-// get data request
+// Обработка запроса GET host:port/api/data
+// Параметры запроса:
+// id - числовой идентификатор датчика, данные которого интересуют
+// from - начало временного диапазона в формате YYYY-MM-DD HH:mm:ss
+// to - конец временного диапазона в формате YYYY-MM-DD HH:mm:ss
+// amount - кол-во временных интервалов, на которое нужно разбить временной диапазон
+// D - размер дельта-окрестности (в процентах от интервала), в пределах которой ищется точка
+// Возвращает список в формате JSON:
+// Пример:
+//
+//	{
+//	   "amount": 5,
+//	   "data": [
+//	       {
+//	           "T": 1000,
+//	           "H": 1000,
+//	           "t": "2021-10-31 23:50:00"
+//	       },
+//	       {
+//	           "T": 1000,
+//	           "H": 1000,
+//	           "t": "2021-10-31 23:55:00"
+//	       }]
+//	}
 func (h *Handler) getData(c *gin.Context) {
 
 	logrus.Printf("getData(): BEGIN")
@@ -571,8 +569,8 @@ func (h *Handler) getData(c *gin.Context) {
 	logrus.Printf("getData(): Try to get data for id = %d, from = %s, to = %s",
 		parser.ID, parser.From.Format("2006-01-02 15:04:05"), parser.To.Format("2006-01-02 15:04:05"))
 
+	// достаем данные из БД
 	items, err := h.services.Data.GetData(parser.ID, parser.From, parser.To, intLimit, offset)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		logrus.Errorf("getData(): Cannot get data for id = %d, from = %s, to = %s, error = %s",
@@ -584,21 +582,41 @@ func (h *Handler) getData(c *gin.Context) {
 
 	if total < parser.Amount {
 		logrus.Printf("getData(): total amount = %d is less than requested amount = %d", total, parser.Amount)
-		//parser.Amount = total
 	}
 
-	var result []model.DTO
-	if parser.Algo == 2 {
-		result = h.algo2(items, parser.Amount, parser.From, parser.To, parser.D)
-	} else {
-		result = h.algo1(items, parser.Amount)
-	}
+	// запуск алгоритма прореживания данных
+	result := h.prepareData(items, parser.Amount, parser.From, parser.To, parser.D)
 
 	c.JSON(http.StatusOK, gin.H{"amount": len(result), "data": result})
 
 	logrus.Printf("getData(): END")
 }
 
+// Обработка запроса GET host:port/api/data/debug
+// Параметры запроса:
+// id - числовой идентификатор датчика, данные которого интересуют
+// from - начало временного диапазона в формате YYYY-MM-DD HH:mm:ss
+// to - конец временного диапазона в формате YYYY-MM-DD HH:mm:ss
+// amount - кол-во временных интервалов, на которое нужно разбить временной диапазон
+// D - размер дельта-окрестности (в процентах от интервала), в пределах которой ищется точка
+// Возвращает список в формате JSON c дополнительными данными для отладки
+// Пример:
+//
+//	{
+//	   "D_in_sec": 150,
+//	   "amount": 5,
+//	   "data": [
+//	       {
+//	           "T": 20.61,
+//	           "H": 51.13,
+//	           "t": "2021-11-01 00:00:20",
+//	           "point": "2021-11-01 00:00:00",
+//	           "left": "2021-10-31 23:57:30",
+//	           "right": "2021-11-01 00:02:30"
+//	       }
+//	   ],
+//	   "step_in_sec": 300
+//	}
 func (h *Handler) getDataDebug(c *gin.Context) {
 
 	logrus.Printf("getDataDebug(): BEGIN")
@@ -625,6 +643,7 @@ func (h *Handler) getDataDebug(c *gin.Context) {
 	logrus.Printf("getDataDebug(): Try to get data for id = %d, from = %s, to = %s",
 		parser.ID, parser.From.Format("2006-01-02 15:04:05"), parser.To.Format("2006-01-02 15:04:05"))
 
+	// получаем данные из БД
 	items, err := h.services.Data.GetData(parser.ID, parser.From, parser.To, intLimit, offset)
 
 	if err != nil {
@@ -638,16 +657,27 @@ func (h *Handler) getDataDebug(c *gin.Context) {
 
 	if total < parser.Amount {
 		logrus.Printf("getDataDebug(): total amount = %d is less than requested amount = %d", total, parser.Amount)
-		//parser.Amount = total
 	}
 
-	result, step_in_sec, D_in_sec := h.algo2Debug(items, parser.Amount, parser.From, parser.To, parser.D)
+	// выполнение алгоритма прореживания данных в режиме отладки
+	result, step_in_sec, D_in_sec := h.prepareDataDebug(items, parser.Amount, parser.From, parser.To, parser.D)
 
 	c.JSON(http.StatusOK, gin.H{"amount": len(result), "step_in_sec": step_in_sec, "D_in_sec": D_in_sec, "data": result})
 
 	logrus.Printf("getDataDebug(): END")
 }
 
+// Обработка запроса GET host:port/api/last/:id
+// Параметры запроса:
+// id - идентификатор датчика
+// Возвращает последние доступные в БД значения для заданного датчика в формате JSON
+// Пример:
+//
+//	{
+//	   "T": 21.35,
+//	   "H": 44.17,
+//	   "t": "2023-09-24 23:59:48"
+//	}
 func (h *Handler) getLastValue(c *gin.Context) {
 	id_str := c.Param("id")
 
