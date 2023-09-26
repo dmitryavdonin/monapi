@@ -1,3 +1,3 @@
 commit: ## build and push container to docker hub| provide tag=(...)
-	@docker build -t dmitryavdonin/promis-monapi:2.0.5 . && docker push dmitryavdonin/promis-monapi:2.0.5
+	@docker build -t dmitryavdonin/promis-monapi:2.0.6 . && docker push dmitryavdonin/promis-monapi:2.0.6
 .PHONY: commit

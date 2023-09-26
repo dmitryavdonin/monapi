@@ -57,15 +57,11 @@ func InitParamParser(c *gin.Context) (*ParamParser, error) {
 	amount := 0
 	amount_str, ok := c.GetQuery("amount")
 	if !ok || amount_str == "" {
-		return nil, errors.New("'amount' param not found or empty")
+		amount = 0
 	}
 	amount, err = strconv.Atoi(amount_str)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse 'amount', error = %s", err.Error())
-	}
-
-	if amount == 0 {
-		return nil, errors.New("'amount' cannot be 0")
+		amount = 0
 	}
 
 	if amount > default_amount {

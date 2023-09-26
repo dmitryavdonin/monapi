@@ -12,7 +12,7 @@ import (
 	"math"
 )
 
-var Version string = "2.0.5"
+var Version string = "2.0.6"
 
 // Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности слева и справа
 func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
@@ -580,14 +580,27 @@ func (h *Handler) getData(c *gin.Context) {
 
 	total := len(items)
 
-	if total < parser.Amount {
-		logrus.Printf("getData(): total amount = %d is less than requested amount = %d", total, parser.Amount)
+	var result []model.DTO
+
+	if parser.Amount == 0 {
+		// если запрошено нулевое количество данных - возвращаем все данные из БД в заданном диапазоне
+		for i := 0; i < total; i++ {
+			dto := model.DTO{
+				Temperature: items[i].Temperature,
+				Humidity:    items[i].Humidity,
+				Time:        items[i].DtWr.Format("2006-01-02 15:04:05"),
+			}
+			result = append(result, dto)
+		}
+	} else {
+		if total < parser.Amount {
+			logrus.Printf("getData(): total amount = %d is less than requested amount = %d", total, parser.Amount)
+		}
+		// запуск алгоритма прореживания данных
+		result = h.prepareData(items, parser.Amount, parser.From, parser.To, parser.D)
 	}
 
-	// запуск алгоритма прореживания данных
-	result := h.prepareData(items, parser.Amount, parser.From, parser.To, parser.D)
-
-	c.JSON(http.StatusOK, gin.H{"amount": len(result), "data": result})
+	c.JSON(http.StatusOK, gin.H{"data": result})
 
 	logrus.Printf("getData(): END")
 }
@@ -655,14 +668,31 @@ func (h *Handler) getDataDebug(c *gin.Context) {
 
 	total := len(items)
 
-	if total < parser.Amount {
-		logrus.Printf("getDataDebug(): total amount = %d is less than requested amount = %d", total, parser.Amount)
+	var result []model.DTODebug
+	var step_in_sec = 0
+	var D_in_sec = 0
+
+	if parser.Amount == 0 {
+		// если запрошено нулевое количество данных - возвращаем все данные из БД в заданном диапазоне
+		for i := 0; i < total; i++ {
+			dto := model.DTODebug{
+				Temperature: items[i].Temperature,
+				Humidity:    items[i].Humidity,
+				Time:        items[i].DtWr.Format("2006-01-02 15:04:05"),
+			}
+			result = append(result, dto)
+		}
+	} else {
+
+		if total < parser.Amount {
+			logrus.Printf("getDataDebug(): total amount = %d is less than requested amount = %d", total, parser.Amount)
+		}
+
+		// выполнение алгоритма прореживания данных в режиме отладки
+		result, step_in_sec, D_in_sec = h.prepareDataDebug(items, parser.Amount, parser.From, parser.To, parser.D)
 	}
 
-	// выполнение алгоритма прореживания данных в режиме отладки
-	result, step_in_sec, D_in_sec := h.prepareDataDebug(items, parser.Amount, parser.From, parser.To, parser.D)
-
-	c.JSON(http.StatusOK, gin.H{"amount": len(result), "step_in_sec": step_in_sec, "D_in_sec": D_in_sec, "data": result})
+	c.JSON(http.StatusOK, gin.H{"step_in_sec": step_in_sec, "D_in_sec": D_in_sec, "data": result})
 
 	logrus.Printf("getDataDebug(): END")
 }
