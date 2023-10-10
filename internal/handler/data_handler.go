@@ -12,7 +12,7 @@ import (
 	"math"
 )
 
-var Version string = "2.0.6"
+var Version string = "2.0.7"
 
 // Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности слева и справа
 func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
