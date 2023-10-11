@@ -12,7 +12,9 @@ import (
 	"math"
 )
 
-var Version string = "2.0.7"
+var Version string = "2.0.8"
+
+var PageItemsLimit = 100000
 
 // Поиск ближайшей фактической точки к расчетной точке в рамках заданной дельта-окрестности слева и справа
 func (h *Handler) findNearest(items []model.Data_new, point time.Time, D_range int) *model.Data_new {
@@ -548,13 +550,13 @@ func (h *Handler) getData(c *gin.Context) {
 	logrus.Printf("getData(): BEGIN")
 
 	var page = c.DefaultQuery("page", "1")
-	var limit = c.DefaultQuery("limit", "10000")
+	var limit = c.DefaultQuery("limit", "0")
 
 	intPage, _ := strconv.Atoi(page)
 	intLimit, _ := strconv.Atoi(limit)
 
-	if intLimit > 10000 {
-		intLimit = 10000
+	if intLimit == 0 || intLimit > PageItemsLimit {
+		intLimit = PageItemsLimit
 	}
 
 	offset := (intPage - 1) * intLimit
@@ -635,13 +637,13 @@ func (h *Handler) getDataDebug(c *gin.Context) {
 	logrus.Printf("getDataDebug(): BEGIN")
 
 	var page = c.DefaultQuery("page", "1")
-	var limit = c.DefaultQuery("limit", "10000")
+	var limit = c.DefaultQuery("limit", "0")
 
 	intPage, _ := strconv.Atoi(page)
 	intLimit, _ := strconv.Atoi(limit)
 
-	if intLimit > 10000 {
-		intLimit = 10000
+	if intLimit == 0 || intLimit > PageItemsLimit {
+		intLimit = PageItemsLimit
 	}
 
 	offset := (intPage - 1) * intLimit
