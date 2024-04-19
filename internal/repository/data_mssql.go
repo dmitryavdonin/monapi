@@ -42,13 +42,15 @@ func (r *DataMsssql) GetLastValue(id int) (model.Data_new, error) {
 	seven_days := time.Now().AddDate(0, 0, -7)
 	db_seven_days := fmt.Sprintf("%d-%d-%d", seven_days.Year(), seven_days.Day(), seven_days.Month())
 
-	result := r.db.Where("ID = ? AND DtWr BETWEEN ? AND ?", id, db_one_day, db_now).Order("DtWr desc").First(&item)
+	result := r.db.Where("ID = ? AND DtWr >= ?", id, db_now).Order("DtWr desc").First(&item)
 	if result.Error != nil {
-		result := r.db.Where("ID = ? AND DtWr BETWEEN ? AND ?", id, db_seven_days, db_one_day).Order("DtWr desc").First(&item)
+		result := r.db.Where("ID = ? AND DtWr >= ", id, db_one_day).Order("DtWr desc").First(&item)
 		if result.Error != nil {
-			return item, result.Error
+			result := r.db.Where("ID = ? AND DtWr >= ", id, db_seven_days).Order("DtWr desc").First(&item)
+			if result.Error != nil {
+				return item, result.Error
+			}
 		}
 	}
-
 	return item, nil
 }

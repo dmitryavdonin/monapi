@@ -12,7 +12,7 @@ import (
 	"math"
 )
 
-var Version string = "2.0.8"
+var Version string = "2.0.9"
 
 var PageItemsLimit = 100000
 
